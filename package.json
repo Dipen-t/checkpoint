@@ -2,6 +2,17 @@
   "name": "checkpoint",
   "version": "0.1.0",
   "type": "module",
+  "description": "The local-first, zero-dependency engineering control layer for AI Coding Agents.",
+  "keywords": [
+    "ai",
+    "agent",
+    "guardrails",
+    "architecture",
+    "llm",
+    "development"
+  ],
+  "author": "Checkpoint Contributors",
+  "license": "MIT",
   "bin": {
     "checkpoint": "./dist/cli.js"
   },
