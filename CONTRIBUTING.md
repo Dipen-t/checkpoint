@@ -8,7 +8,7 @@ Checkpoint is designed to be the local-first, zero-dependency middleware for AI 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/checkpoint.git
+   git clone https://github.com/Dipen-t/checkpoint.git
    cd checkpoint
    ```
 

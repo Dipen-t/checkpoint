@@ -11,7 +11,11 @@
     "llm",
     "development"
   ],
-  "author": "Checkpoint Contributors",
+  "author": "Dipen-t <dipentalreja@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dipen-t/checkpoint.git"
+  },
   "license": "MIT",
   "bin": {
     "checkpoint": "./dist/cli.js"
