@@ -1,5 +1,5 @@
 {
-  "name": "checkpoint",
+  "name": "@nah/checkpoint",
   "version": "0.1.0",
   "type": "module",
   "description": "The local-first, zero-dependency engineering control layer for AI Coding Agents.",

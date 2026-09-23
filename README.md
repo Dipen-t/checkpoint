@@ -3,7 +3,7 @@
 > **Mandatory thinking, minimum bureaucracy.** 
 > The local-first, zero-dependency engineering control layer for AI Coding Agents.
 
-[![npm version](https://img.shields.io/npm/v/checkpoint.svg)](https://www.npmjs.com/package/checkpoint)
+[![npm version](https://img.shields.io/npm/v/@nah/checkpoint.svg)](https://www.npmjs.com/package/@nah/checkpoint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## The Problem: "Move Fast and Break Things" on Steroids
@@ -24,9 +24,9 @@ When the AI agent proposes a change that violates an architectural convention, C
 Install Checkpoint globally and initialize it inside any of your project repositories:
 
 ```bash
-npm install -g checkpoint
+npm install -g @nah/checkpoint
 cd your-project-directory
-npx checkpoint init
+npx @nah/checkpoint init
 ```
 
 This will automatically scaffold the `.checkpoint/` local brain and register the hooks needed to integrate with your AI agent.
@@ -42,7 +42,7 @@ You can resolve these blocks by typing slash commands in the agent's chat interf
 /checkpoint status     # View pending decisions
 /checkpoint verify     # Run the AI's git diff against your architectural rules
 ```
-*(Or use the CLI: `npx checkpoint decisions resolve <id> --yes`)*
+*(Or use the CLI: `npx @nah/checkpoint decisions resolve <id> --yes`)*
 
 ---
 
