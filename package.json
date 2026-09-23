@@ -1,0 +1,31 @@
+{
+  "name": "checkpoint",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "checkpoint": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    ".agents",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@types/node": "^26.5.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  }
+}

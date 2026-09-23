@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.checkpoint/
+.agents/
+checkpoint-*.tgz
+checkpoint-lab/
+test-folders/
+coverage/
+.DS_Store
