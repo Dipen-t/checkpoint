@@ -27,11 +27,13 @@ Install Checkpoint globally:
 npm install -g @nah/checkpoint
 ```
 
-Then, open your AI coding agent (Cursor, Antigravity, etc.) and simply paste this into the chat:
+Then, open your AI coding agent (Cursor, Antigravity, etc.) and simply type this slash command into the chat:
 
-> "Please initialize `@nah/checkpoint` in this workspace."
+```text
+/checkpoint init
+```
 
-Your agent will run the command under the hood, automatically scaffolding the `.checkpoint/` local brain and registering the hooks needed to integrate with your AI agent.
+Your agent will run the initialization under the hood, automatically scaffolding the `.checkpoint/` local brain and registering the hooks needed to monitor your project.
 
 ### 2. Open Cursor, Claude Code, or Copilot
 Start your AI coding session normally. Checkpoint operates silently in the background for routine tasks (0 interruptions).
