@@ -1,9 +1,0 @@
-{
-  "toolCall": {
-    "name": "write_to_file",
-    "args": {
-      "TargetFile": "implementation_plan.md",
-      "CodeContent": "- Put business logic directly into the cli command"
-    }
-  }
-}
