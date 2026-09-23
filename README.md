@@ -21,15 +21,17 @@ When the AI agent proposes a change that violates an architectural convention, C
 ## ⚡ 30-Second Quickstart
 
 ### 1. Install & Initialize
-Install Checkpoint globally and initialize it inside any of your project repositories:
+Install Checkpoint globally:
 
 ```bash
 npm install -g @nah/checkpoint
-cd your-project-directory
-npx @nah/checkpoint init
 ```
 
-This will automatically scaffold the `.checkpoint/` local brain and register the hooks needed to integrate with your AI agent.
+Then, open your AI coding agent (Cursor, Antigravity, etc.) and simply paste this into the chat:
+
+> "Please initialize `@nah/checkpoint` in this workspace."
+
+Your agent will run the command under the hood, automatically scaffolding the `.checkpoint/` local brain and registering the hooks needed to integrate with your AI agent.
 
 ### 2. Open Cursor, Claude Code, or Copilot
 Start your AI coding session normally. Checkpoint operates silently in the background for routine tasks (0 interruptions).
