@@ -3,14 +3,14 @@ import { StateManager } from "../core/state.js";
 export async function explainCommand() {
   const cwd = process.cwd();
   const stateManager = new StateManager(cwd);
-  
+
   try {
     const task = await stateManager.readState();
     if (!task) {
       console.log("No active Checkpoint session found.");
       return;
     }
-    
+
     if (!task.evaluations || task.evaluations.length === 0) {
       console.log("CHECKPOINT EXPLANATION\n");
       console.log("No architectural evaluations have occurred in the current task yet.");
@@ -18,28 +18,28 @@ export async function explainCommand() {
     }
 
     console.log("CHECKPOINT EXPLANATION\n");
-    
+
     // Explain the most recent evaluation
     const lastEval = task.evaluations[task.evaluations.length - 1];
-    
+
     console.log(`Decision:`);
     console.log(lastEval.resolution.type);
     console.log();
-    
+
     console.log(`Reason:`);
     console.log(lastEval.resolution.reason);
     console.log();
-    
+
     console.log(`Evidence:`);
     console.log(lastEval.conflict.proposedAction || lastEval.conflict.subject);
     console.log();
-    
+
     if (lastEval.conflict.rule) {
       console.log(`Existing rule/decision:`);
       console.log(lastEval.conflict.rule.content);
       console.log();
     }
-    
+
     if (lastEval.resolution.warningDetails) {
       console.log(`Why it wasn't silently allowed:`);
       console.log(lastEval.resolution.warningDetails.why);

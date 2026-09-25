@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "profile": "local",
+  "reviewers": [],
+  "requireReviewer": false,
+  "witness": "local",
+  "imports": [
+    {
+      "id": "views-do-not-query",
+      "severity": "error",
+      "denyPaths": ["**/views/**", "**/templates/**", "**/pages/**"],
+      "allowPaths": [],
+      "denyLine": ["eval(", "mysqli_query", "prisma."],
+      "message": "Views render. Queries and eval stay in the service that owns them."
+    }
+  ],
+  "approvalRequired": ["checkpoint.policy.json"],
+  "exceptions": []
+}

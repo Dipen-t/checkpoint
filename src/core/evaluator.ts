@@ -1,5 +1,5 @@
-import type { Conflict, Resolution, ConflictSeverity } from "../models/verification.js";
 import type { Decision } from "../models/decision.js";
+import type { Conflict, ConflictSeverity, Resolution } from "../models/verification.js";
 
 export interface IEvaluator {
   evaluateConflict(conflict: Conflict, priorDecisions: Decision[]): Resolution;
@@ -13,11 +13,11 @@ export class DeterministicEvaluator implements IEvaluator {
     for (const prior of priorDecisions) {
       if (
         prior.scopedTo &&
-        prior.scopedTo.some(scope => {
+        prior.scopedTo.some((scope) => {
           // Use word-boundary matching to prevent partial matches
           // e.g. scope "admin-api" should NOT match action mentioning just "admin"
-          const escapedScope = scope.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const scopePattern = new RegExp(`\\b${escapedScope}\\b`, 'i');
+          const escapedScope = scope.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const scopePattern = new RegExp(`\\b${escapedScope}\\b`, "i");
           return scopePattern.test(action);
         }) &&
         prior.status === "RESOLVED"
@@ -32,11 +32,11 @@ export class DeterministicEvaluator implements IEvaluator {
 
     // Case D: Intentional exception
     if (action.includes("formatting helper") || action.includes("migration script")) {
-       return {
-         type: "ACCEPTED_EXCEPTION",
-         reason: "Matches known acceptable exceptions.",
-         escalateToHuman: false,
-       };
+      return {
+        type: "ACCEPTED_EXCEPTION",
+        reason: "Matches known acceptable exceptions.",
+        escalateToHuman: false,
+      };
     }
 
     // Case E: Security
@@ -50,8 +50,8 @@ export class DeterministicEvaluator implements IEvaluator {
           what: `The plan introduces a security-sensitive change: "${conflict.subject}"`,
           why: "Changes to auth, credentials, or secrets carry high risk.",
           evidence: "Matched security heuristic in proposed step.",
-          decisionNeeded: "Should this security pattern be approved?"
-        }
+          decisionNeeded: "Should this security pattern be approved?",
+        },
       };
     }
 
@@ -66,15 +66,21 @@ export class DeterministicEvaluator implements IEvaluator {
           what: `The plan alters the data model or persistence: "${conflict.subject}"`,
           why: "Schema and migration changes require architectural consensus.",
           evidence: "Matched persistence heuristic in proposed step.",
-          decisionNeeded: "Is this persistence change architecturally sound?"
-        }
+          decisionNeeded: "Is this persistence change architecturally sound?",
+        },
       };
     }
 
     // Case G: Dependency Change
     if (conflict.severity === "LOW" && conflict.context.includes("Dependency")) {
       // Differentiate: fundamental vs routine
-      if (action.includes("next") || action.includes("express") || action.includes("react") || action.includes("vue") || action.includes("framework")) {
+      if (
+        action.includes("next") ||
+        action.includes("express") ||
+        action.includes("react") ||
+        action.includes("vue") ||
+        action.includes("framework")
+      ) {
         return {
           type: "HUMAN_DECISION_REQUIRED",
           reason: "Fundamental dependency change.",
@@ -84,8 +90,8 @@ export class DeterministicEvaluator implements IEvaluator {
             what: `Adding a core structural dependency: "${conflict.subject}"`,
             why: "Core frameworks change the runtime architecture.",
             evidence: "Matched framework heuristic.",
-            decisionNeeded: "Should we adopt this new core dependency?"
-          }
+            decisionNeeded: "Should we adopt this new core dependency?",
+          },
         };
       }
       return {
@@ -97,11 +103,11 @@ export class DeterministicEvaluator implements IEvaluator {
 
     // Case D: Intentional exception
     if (action.includes("formatting helper") || action.includes("migration script")) {
-       return {
-         type: "ACCEPTED_EXCEPTION",
-         reason: "Matches known acceptable exceptions.",
-         escalateToHuman: false,
-       };
+      return {
+        type: "ACCEPTED_EXCEPTION",
+        reason: "Matches known acceptable exceptions.",
+        escalateToHuman: false,
+      };
     }
 
     // Case C: Architectural deviation
@@ -121,13 +127,17 @@ export class DeterministicEvaluator implements IEvaluator {
             what: `The proposed implementation violates the architecture boundary: "${conflict.subject}"`,
             why: conflict.rule.content,
             evidence: `The plan directly contradicts the recorded architectural rule.`,
-            decisionNeeded: `Should this component follow the existing boundary?`
-          }
+            decisionNeeded: `Should this component follow the existing boundary?`,
+          },
         };
       }
-      
+
       // Case A: Routine (using existing engines)
-      if (action.includes("using an existing engine") || action.includes("add a version command") || action.includes("add a new cli command")) {
+      if (
+        action.includes("using an existing engine") ||
+        action.includes("add a version command") ||
+        action.includes("add a new cli command")
+      ) {
         return {
           type: "NO_CONFLICT",
           reason: "Routine implementation following architecture.",
@@ -145,7 +155,23 @@ export class DeterministicEvaluator implements IEvaluator {
       };
     }
 
-    // Default: Routine Silence
+    // A high or critical conflict with no allow rule stays blocked.
+    // OWASP agent guidance: fail closed when the check is uncertain.
+    if (conflict.severity === "CRITICAL" || conflict.severity === "HIGH") {
+      return {
+        type: "HUMAN_DECISION_REQUIRED",
+        reason: "No allow rule matched this high-impact change.",
+        escalateToHuman: true,
+        risk: conflict.severity,
+        warningDetails: {
+          what: `Checkpoint could not clear: "${conflict.subject}"`,
+          why: "High-impact changes need an explicit allow rule or a human decision.",
+          evidence: conflict.context,
+          decisionNeeded: "Should this change go ahead?",
+        },
+      };
+    }
+
     return {
       type: "NO_CONFLICT",
       reason: "No significant conflict identified.",
@@ -154,19 +180,19 @@ export class DeterministicEvaluator implements IEvaluator {
   }
 }
 
-import { SemanticEvaluator } from "../llm/semantic-evaluator.js";
+import type { SemanticEvaluator } from "../llm/semantic-evaluator.js";
 
 export class FinalEvaluator {
   constructor(
     private deterministic: DeterministicEvaluator,
-    private semantic: SemanticEvaluator
+    private semantic: SemanticEvaluator,
   ) {}
 
   async evaluateConflict(conflict: Conflict, priorDecisions: Decision[]): Promise<Resolution> {
     const detRes = this.deterministic.evaluateConflict(conflict, priorDecisions);
 
     if (
-      detRes.type === "FOLLOW_EXISTING_DECISION" || 
+      detRes.type === "FOLLOW_EXISTING_DECISION" ||
       detRes.type === "ACCEPTED_EXCEPTION" ||
       detRes.type === "NO_CONFLICT"
     ) {
@@ -174,7 +200,16 @@ export class FinalEvaluator {
     }
 
     const semRes = await this.semantic.evaluate(conflict);
-    
+
+    // A model may explain a block. It may not clear a high or critical block.
+    if (
+      semRes &&
+      !semRes.escalateToHuman &&
+      (detRes.risk === "CRITICAL" || detRes.risk === "HIGH")
+    ) {
+      return detRes;
+    }
+
     if (semRes) {
       return semRes;
     }

@@ -1,5 +1,5 @@
 import type { Scope } from "../../models/scope.js";
-import type { Evidence, Deviation } from "../../models/verification.js";
+import type { Deviation, Evidence } from "../../models/verification.js";
 
 export interface IScopeEngine {
   evaluateEvidence(scope: Scope, evidence: Evidence): Deviation[];

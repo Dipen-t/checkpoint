@@ -1,9 +1,9 @@
-import { UnderstandingEngine } from "../engines/understanding/index.js";
-import { MemoryEngine } from "../engines/memory/index.js";
+import { exec } from "node:child_process";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { MemoryEngine } from "../engines/memory/index.js";
+import { UnderstandingEngine } from "../engines/understanding/index.js";
 
 const execAsync = promisify(exec);
 
@@ -18,10 +18,18 @@ export async function inspectCommand(customCwd?: string) {
   console.log(`Runtime:        ${context.runtime || "Unknown"}`);
   console.log(`Language:       ${context.language || "Unknown"}`);
   console.log(`Package Mgr:    ${context.packageManager || "Unknown"}`);
-  console.log(`Frameworks:     ${context.frameworks.length > 0 ? context.frameworks.join(", ") : "None detected"}`);
-  console.log(`Testing:        ${context.testingSetup.length > 0 ? context.testingSetup.join(", ") : "None detected"}`);
-  console.log(`Build Tooling:  ${context.buildTooling.length > 0 ? context.buildTooling.join(", ") : "None detected"}`);
-  console.log(`Architecture:   ${context.architecturalPatterns.length > 0 ? context.architecturalPatterns.join(", ") : "None detected"}`);
+  console.log(
+    `Frameworks:     ${context.frameworks.length > 0 ? context.frameworks.join(", ") : "None detected"}`,
+  );
+  console.log(
+    `Testing:        ${context.testingSetup.length > 0 ? context.testingSetup.join(", ") : "None detected"}`,
+  );
+  console.log(
+    `Build Tooling:  ${context.buildTooling.length > 0 ? context.buildTooling.join(", ") : "None detected"}`,
+  );
+  console.log(
+    `Architecture:   ${context.architecturalPatterns.length > 0 ? context.architecturalPatterns.join(", ") : "None detected"}`,
+  );
   if (context.entrypoints.length > 0) {
     console.log(`Entrypoints:`);
     for (const ep of context.entrypoints) {

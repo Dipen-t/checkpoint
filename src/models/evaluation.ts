@@ -15,11 +15,13 @@ export type SemanticEvaluation = z.infer<typeof SemanticEvaluationSchema>;
 
 export const ConsistencyEvaluationSchema = z.object({
   isConsistent: z.boolean(),
-  deviations: z.array(z.object({
-    type: z.enum(["ARCHITECTURE", "CONVENTION"]),
-    description: z.string(),
-    severity: z.enum(["LOW", "MEDIUM", "MAJOR", "CRITICAL"])
-  }))
+  deviations: z.array(
+    z.object({
+      type: z.enum(["ARCHITECTURE", "CONVENTION"]),
+      description: z.string(),
+      severity: z.enum(["LOW", "MEDIUM", "MAJOR", "CRITICAL"]),
+    }),
+  ),
 });
 
 export type ConsistencyEvaluation = z.infer<typeof ConsistencyEvaluationSchema>;

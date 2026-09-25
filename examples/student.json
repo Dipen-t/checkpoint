@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "profile": "local",
+  "reviewers": [],
+  "requireReviewer": false,
+  "witness": "local",
+  "imports": [],
+  "approvalRequired": ["checkpoint.policy.json", "checkpoint.pub"],
+  "exceptions": []
+}

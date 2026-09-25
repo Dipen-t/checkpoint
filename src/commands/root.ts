@@ -5,7 +5,7 @@ import { UnderstandingEngine } from "../engines/understanding/index.js";
 export async function rootCommand() {
   const cwd = process.cwd();
   const stateManager = new StateManager(cwd);
-  
+
   try {
     const task = await stateManager.readState();
     if (!task) {
@@ -21,7 +21,7 @@ export async function rootCommand() {
 
     const understanding = new UnderstandingEngine();
     const projContext = await understanding.scanWorkspace(cwd);
-    
+
     console.log("Understanding:");
     if (projContext.architecturalPatterns.length > 0) {
       console.log(projContext.architecturalPatterns.join("\n"));
@@ -30,14 +30,14 @@ export async function rootCommand() {
     }
     console.log();
 
-    const memoryEngine = new MemoryEngine(cwd);
+    const memoryEngine = new MemoryEngine();
     const decisions = await memoryEngine.getAllDecisions(cwd);
 
     console.log("Relevant decisions:");
     if (decisions.length === 0) {
       console.log("None");
     } else {
-      decisions.forEach(d => console.log(`✓ ${d.resolution}`));
+      for (const decision of decisions) console.log(`✓ ${decision.resolution}`);
     }
     console.log();
 
@@ -52,7 +52,9 @@ export async function rootCommand() {
     console.log(risk);
     console.log();
 
-    const pending = task.decisions ? task.decisions.filter((d: any) => d.status === "PENDING" && d.requiresHumanInput) : [];
+    const pending = task.decisions
+      ? task.decisions.filter((d: any) => d.status === "PENDING" && d.requiresHumanInput)
+      : [];
     if (pending.length > 0) {
       console.log("Potential decision:");
       console.log(pending[0].issue);
@@ -62,7 +64,6 @@ export async function rootCommand() {
       console.log("None identified.");
       console.log("\nNo blocking decision currently required.");
     }
-    
   } catch (err) {
     console.error("Failed to evaluate Checkpoint context.");
   }

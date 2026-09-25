@@ -1,5 +1,5 @@
-import type { Conflict, Resolution } from "../models/verification.js";
 import { SemanticEvaluationSchema } from "../models/evaluation.js";
+import type { Conflict, Resolution } from "../models/verification.js";
 import type { ILlmProvider } from "./provider.js";
 
 export class SemanticEvaluator {
@@ -33,8 +33,8 @@ export class SemanticEvaluator {
             what: `Semantic analysis flagged an issue with: "${conflict.subject}"`,
             why: evaluation.reasoning,
             evidence: evaluation.evidenceReferences.join(", "),
-            decisionNeeded: "Review this semantic architecture conflict."
-          }
+            decisionNeeded: "Review this semantic architecture conflict.",
+          },
         };
       }
 
@@ -44,7 +44,6 @@ export class SemanticEvaluator {
         reason: evaluation.reasoning,
         escalateToHuman: false,
       };
-
     } catch (e) {
       // If validation fails or provider throws, fallback gracefully
       return null;

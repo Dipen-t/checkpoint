@@ -2,7 +2,7 @@
   "name": "nah-checkpoint",
   "version": "0.1.0",
   "type": "module",
-  "description": "The local-first, zero-dependency engineering control layer for AI Coding Agents.",
+  "description": "Local gate for any git repository. A committed policy reads the diff and blocks the change. The agent's plan cannot clear a block.",
   "keywords": [
     "ai",
     "agent",
@@ -23,7 +23,9 @@
   "files": [
     "dist",
     ".agents",
-    "README.md"
+    "README.md",
+    "examples",
+    "CONTRIBUTING.md"
   ],
   "scripts": {
     "dev": "tsx src/cli.ts",

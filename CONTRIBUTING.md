@@ -1,47 +1,55 @@
-# Contributing to Checkpoint
+# Contributing
 
-First off, thank you for considering contributing to Checkpoint! 🛑
+Checkpoint reads the git diff and follows `checkpoint.policy.json`. Exit 0 allows. Exit 2 blocks. A sentence in the agent's plan cannot clear a block.
 
-Checkpoint is designed to be the local-first, zero-dependency middleware for AI coding agents. Whether you want to add support for a new LLM provider, improve the BM25 memory engine, or fix a bug, your help is welcome.
+```mermaid
+flowchart LR
+  you["Your change"] --> test["npm test"]
+  test --> pr["Pull request"]
+```
 
-## Local Development Setup
+## Set up
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Dipen-t/checkpoint.git
-   cd checkpoint
-   ```
+```bash
+git clone https://github.com/Dipen-t/checkpoint.git
+cd checkpoint
+npm install
+npm test
+npm run typecheck
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+Try a command:
 
-3. **Run the tests**
-   Checkpoint uses `vitest` for extremely fast, isolated unit and integration testing. We maintain a strict test suite that mocks out the filesystem and LLMs to ensure the Core Engines behave deterministically.
-   ```bash
-   npm run test
-   ```
+```bash
+npm run dev -- adopt local
+npm run dev -- check
+```
 
-4. **Build the CLI**
-   ```bash
-   npm run build
-   ```
-   *You can also run the CLI in development mode using `npm run dev -- <command>`*.
+## Where to edit
 
-## Architecture Overview
+| Path | Edit this when |
+| --- | --- |
+| `src/policy/` | You change what the policy file means |
+| `src/commands/check.ts` | You change allow and block |
+| `src/ledger/` | You change the signed record |
+| `examples/` | You add a policy people can copy |
+| `tests/` | You lock the behavior |
 
-Checkpoint is organized into 4 distinct engines located in `src/engines/`:
-- **Decision Engine**: Parses agent implementation plans (AST/RegEx) to apply proactive guardrails.
-- **Memory Engine**: Pure-TypeScript BM25 algorithm to dynamically inject local `.checkpoint/memory` rules into prompts.
-- **Consistency Engine**: Uses the LLM provider to semantically verify that git diffs don't violate architectural memory.
-- **Verification Engine**: Compares the agent's tool call claims against raw `git diff` outputs to catch scope drift.
+## Add a rule
 
-## Pull Request Process
+Copy the object in [examples/your-rule.json](examples/your-rule.json).
 
-1. Ensure all 68+ tests pass (`npm run test`).
-2. Add new tests for any new Engine heuristics or LLM evaluation boundaries.
-3. Update the `README.md` if you are changing the CLI surface area.
-4. Open a PR with a clear description of the problem you are solving (e.g. "Fixes false positive on data model regex").
+- `denyPaths` — where the line is forbidden
+- `allowPaths` — where that same line is fine
+- `denyLine` — text on a new line
 
-Thank you for helping us keep AI agents strictly in line! 🚀
+Add a test that runs `evaluatePolicy` and expects your rule id. Build a fake token in the test. Do not paste a real one.
+
+## Open a pull request
+
+1. `npm test` passes.
+2. `npm run typecheck` passes.
+3. The new behavior has a test.
+4. A new command is in the README.
+
+Say what failed before, and what the diff shows now.

@@ -1,14 +1,37 @@
-import { test, expect, vi, beforeEach } from "vitest";
+import { execFile } from "node:child_process";
+import * as crypto from "node:crypto";
+import { promises as fs } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
+import { promisify } from "node:util";
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest";
 import { handleAntigravityHook } from "../src/adapters/antigravity/index.js";
 import { StateManager } from "../src/core/state.js";
-import { promises as fs } from "node:fs";
-import * as path from "node:path";
-import * as crypto from "node:crypto";
-
 import { MemoryEngine } from "../src/engines/memory/index.js";
 
-const cwd = process.cwd();
-const stateManager = new StateManager(cwd);
+const exec = promisify(execFile);
+let cwd = "";
+let stateManager: StateManager;
+
+function hook(type: string, payload: unknown) {
+  return handleAntigravityHook(type, payload, cwd);
+}
+
+beforeAll(async () => {
+  cwd = await fs.mkdtemp(path.join(tmpdir(), "checkpoint-lifecycle-"));
+  stateManager = new StateManager(cwd);
+  await exec("git", ["init"], { cwd });
+  await exec("git", ["config", "user.email", "test@example.com"], { cwd });
+  await exec("git", ["config", "user.name", "Test"], { cwd });
+  await fs.writeFile(path.join(cwd, "README.md"), "ok\n");
+  await exec("git", ["add", "README.md"], { cwd });
+  await exec("git", ["commit", "-m", "init"], { cwd });
+  await fs.writeFile(path.join(cwd, "README.md"), "changed\n");
+});
+
+afterAll(async () => {
+  if (cwd) await fs.rm(cwd, { recursive: true, force: true });
+});
 
 beforeEach(async () => {
   // Mock Memory Engine
@@ -17,8 +40,8 @@ beforeEach(async () => {
       id: "mem-1",
       type: "ARCHITECTURE",
       content: "Controller-Service-Repository architecture must be strictly followed.",
-      createdAt: new Date().toISOString()
-    }
+      createdAt: new Date().toISOString(),
+    },
   ]);
 
   // reset state
@@ -32,7 +55,7 @@ beforeEach(async () => {
       updatedAt: new Date().toISOString(),
       agentClaims: [],
       toolResults: [],
-      decisions: []
+      decisions: [],
     };
     await stateManager.writeState(task as any);
   } catch {}
@@ -50,10 +73,10 @@ test("Test B: A plan following project conventions does not generate a human dec
   const payload = {
     toolCall: {
       name: "write_to_file",
-      args: { TargetFile: "implementation_plan.md", CodeContent: "- add a new user repository" }
-    }
+      args: { TargetFile: "implementation_plan.md", CodeContent: "- add a new user repository" },
+    },
   };
-  const result = await handleAntigravityHook("pre-tool-use", payload);
+  const result = await hook("pre-tool-use", payload);
   expect(result.decision).toBe("allow");
   expect(result.injectSteps).toBeUndefined(); // no warnings injected
 });
@@ -62,10 +85,10 @@ test("Test C: A meaningful architectural deviation generates a decision request 
   const payload = {
     toolCall: {
       name: "write_to_file",
-      args: { TargetFile: "implementation_plan.md", CodeContent: "- Add prisma" }
-    }
+      args: { TargetFile: "implementation_plan.md", CodeContent: "- Add prisma" },
+    },
   };
-  const result = await handleAntigravityHook("pre-tool-use", payload);
+  const result = await hook("pre-tool-use", payload);
   expect(result.decision).toBe("deny"); // We now deny and ask
   expect(result.reason).toBeDefined(); // But we warn!
   expect(result.reason).toContain("CHECKPOINT DECISION REQUIRED [");
@@ -75,30 +98,30 @@ test("Test D: PreToolUse captures an AgentClaim", async () => {
   const payload = {
     toolCall: {
       name: "write_to_file",
-      args: { TargetFile: "c:\\checkpoint\\src\\foo.ts", Description: "Add foo" }
-    }
+      args: { TargetFile: "c:\\checkpoint\\src\\foo.ts", Description: "Add foo" },
+    },
   };
-  await handleAntigravityHook("pre-tool-use", payload);
+  await hook("pre-tool-use", payload);
   const state = await stateManager.readState();
   expect(state?.agentClaims?.length).toBeGreaterThan(0);
-  expect(state?.agentClaims![0].modifiedFiles).toContain("c:\\checkpoint\\src\\foo.ts");
+  expect(state?.agentClaims?.[0]?.modifiedFiles).toContain("c:\\checkpoint\\src\\foo.ts");
 });
 
 test("Test E: PostToolUse records execution result", async () => {
   const payload = {
     toolCall: {
       name: "write_to_file",
-      args: { TargetFile: "c:\\checkpoint\\src\\foo.ts" }
-    }
+      args: { TargetFile: "c:\\checkpoint\\src\\foo.ts" },
+    },
   };
-  await handleAntigravityHook("post-tool-use", payload);
+  await hook("post-tool-use", payload);
   const state = await stateManager.readState();
   expect(state?.toolResults?.length).toBeGreaterThan(0);
-  expect(state?.toolResults![0].tool).toBe("write_to_file");
+  expect(state?.toolResults?.[0]?.tool).toBe("write_to_file");
 });
 
 test("Test F: Stop collects real Git evidence", async () => {
-  await handleAntigravityHook("stop", { terminationReason: "model_stop" });
+  await hook("stop", { terminationReason: "model_stop" });
   // Evidence is checked in report
   const reportPath = path.join(cwd, ".checkpoint", "checkpoint-report.txt");
   const report = await fs.readFile(reportPath, "utf-8");
@@ -113,22 +136,22 @@ test("Test G: AgentClaim and Git reality disagree -> EVIDENCE_MISMATCH", async (
   task.agentClaims = [{ modifiedFiles: ["c:\\checkpoint\\fake.ts"], description: "" }];
   await stateManager.writeState(task);
 
-  await handleAntigravityHook("stop", { terminationReason: "model_stop" });
-  
+  await hook("stop", { terminationReason: "model_stop" });
+
   const reportPath = path.join(cwd, ".checkpoint", "checkpoint-report.txt");
   const report = await fs.readFile(reportPath, "utf-8");
   expect(report).toContain("[EVIDENCE_MISMATCH]");
 });
 
 test("Test H: Successful task -> Completion Report", async () => {
-  await handleAntigravityHook("stop", { terminationReason: "model_stop" });
+  await hook("stop", { terminationReason: "model_stop" });
   const reportPath = path.join(cwd, ".checkpoint", "checkpoint-report.txt");
   const report = await fs.readFile(reportPath, "utf-8");
   expect(report).toContain("CHECKPOINT REPORT");
 });
 
 test("Test I: Task introduces no durable knowledge -> no memory created", async () => {
-  await handleAntigravityHook("stop", { terminationReason: "model_stop" });
+  await hook("stop", { terminationReason: "model_stop" });
   const reportPath = path.join(cwd, ".checkpoint", "checkpoint-report.txt");
   const report = await fs.readFile(reportPath, "utf-8");
   expect(report).toContain("Memory: No durable knowledge created");
@@ -144,18 +167,20 @@ test("Test J: Task creates a confirmed engineering decision -> durable memory ca
     updatedAt: new Date().toISOString(),
     agentClaims: [],
     toolResults: [],
-    decisions: [{
-      id: crypto.randomUUID(),
-      issue: "Added redis cache bypass",
-      classification: "ARCHITECTURE",
-      requiresHumanInput: true,
-      status: "RESOLVED",
-      resolution: "Approved"
-    }]
+    decisions: [
+      {
+        id: crypto.randomUUID(),
+        issue: "Added redis cache bypass",
+        classification: "ARCHITECTURE",
+        requiresHumanInput: true,
+        status: "RESOLVED",
+        resolution: "Approved",
+      },
+    ],
   };
   await stateManager.writeState(task as any);
 
-  await handleAntigravityHook("stop", { terminationReason: "model_stop" });
+  await hook("stop", { terminationReason: "model_stop" });
   const reportPath = path.join(cwd, ".checkpoint", "checkpoint-report.txt");
   const report = await fs.readFile(reportPath, "utf-8");
   // Decisions should be printed

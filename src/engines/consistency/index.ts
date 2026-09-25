@@ -1,7 +1,7 @@
-import type { Evidence, Deviation } from "../../models/verification.js";
-import type { Memory } from "../../models/memory.js";
 import type { ILlmProvider } from "../../llm/provider.js";
 import { ConsistencyEvaluationSchema } from "../../models/evaluation.js";
+import type { Memory } from "../../models/memory.js";
+import type { Deviation, Evidence } from "../../models/verification.js";
 
 export interface IConsistencyEngine {
   evaluateEvidence(evidence: Evidence, memories: Memory[]): Promise<Deviation[]>;
@@ -20,7 +20,9 @@ export class ConsistencyEngine implements IConsistencyEngine {
       return [];
     }
 
-    const memoryContent = memories.map(m => `[${m.type}] (Confidence: ${m.confidence}) ${m.content}`).join("\n");
+    const memoryContent = memories
+      .map((m) => `[${m.type}] (Confidence: ${m.confidence}) ${m.content}`)
+      .join("\n");
 
     const prompt = `
 Evaluate the following code changes (git diff) against the project's Architectural and Conventional memories.
@@ -41,20 +43,25 @@ Respond ONLY with JSON matching the ConsistencyEvaluationSchema.
 
     try {
       const evaluation = await this.provider.evaluate(prompt, ConsistencyEvaluationSchema);
-      
+
       if (evaluation.isConsistent || !evaluation.deviations || evaluation.deviations.length === 0) {
         return [];
       }
 
-      return evaluation.deviations.map(d => ({
-        type: d.type as "ARCHITECTURE" | "SCOPE" | "EVIDENCE_MISMATCH",
+      return evaluation.deviations.map((d) => ({
+        type: d.type === "CONVENTION" ? ("ARCHITECTURE" as const) : d.type,
         description: d.description,
-        severity: d.severity,
+        severity: d.severity === "LOW" || d.severity === "MEDIUM" ? ("MINOR" as const) : d.severity,
       }));
     } catch (e) {
-      // Fail open if the LLM provider fails (e.g. no API key, or MockProvider misses)
-      console.warn("ConsistencyEngine: LLM evaluation failed, falling back to permissive mode.", e);
-      return [];
+      console.warn("ConsistencyEngine: check failed. Review is required.", e);
+      return [
+        {
+          type: "ARCHITECTURE",
+          description: "The consistency check did not finish. The change needs a human review.",
+          severity: "CRITICAL",
+        },
+      ];
     }
   }
 }

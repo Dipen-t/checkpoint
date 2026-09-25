@@ -1,5 +1,5 @@
+import { Ledger } from "../ledger/chain.js";
 import type { Task, TaskStatus } from "../models/task.js";
-import type { Event } from "../models/event.js";
 import type { StateManager } from "./state.js";
 
 /**
@@ -21,7 +21,10 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 };
 
 export class WorkflowEngine {
-  constructor(private stateManager: StateManager) {}
+  constructor(
+    private stateManager: StateManager,
+    private workspaceRoot?: string,
+  ) {}
 
   /**
    * Orchestrates a state transition, ensuring it's valid according to the machine rules.
@@ -39,8 +42,21 @@ export class WorkflowEngine {
     };
 
     await this.stateManager.writeState(updatedTask);
-    
-    // In the future, this is where we would emit the relevant Domain Event to the rest of the system.
+
+    if (this.workspaceRoot) {
+      const ledger = new Ledger(this.workspaceRoot);
+      await ledger.append({
+        type: "STATE_TRANSITION",
+        source: "SYSTEM",
+        payload: {
+          from: task.status,
+          to: targetStatus,
+          taskId: task.id,
+          detail: eventPayload ?? null,
+        },
+      });
+    }
+
     return updatedTask;
   }
 }

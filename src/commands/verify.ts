@@ -1,12 +1,12 @@
+import { exec } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import * as path from "node:path";
+import { promisify } from "node:util";
 import { StateManager } from "../core/state.js";
-import { VerificationEngine } from "../engines/verification/index.js";
-import { ScopeEngine } from "../engines/scope/index.js";
 import { ConsistencyEngine } from "../engines/consistency/index.js";
 import { MemoryEngine } from "../engines/memory/index.js";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-import * as path from "node:path";
-import { randomUUID } from "node:crypto";
+import { ScopeEngine } from "../engines/scope/index.js";
+import { VerificationEngine } from "../engines/verification/index.js";
 import type { AgentClaim, Evidence } from "../models/verification.js";
 
 const execAsync = promisify(exec);
@@ -14,7 +14,7 @@ const execAsync = promisify(exec);
 export async function verifyCommand() {
   const cwd = process.cwd();
   const stateManager = new StateManager(cwd);
-  
+
   try {
     const task = await stateManager.readState();
     if (!task) {
@@ -30,9 +30,12 @@ export async function verifyCommand() {
     try {
       const { stdout: diffStdout } = await execAsync("git diff", { cwd });
       gitDiffs = [diffStdout];
-      
+
       const { stdout: statusStdout } = await execAsync("git status --porcelain", { cwd });
-      modifiedFiles = statusStdout.split("\n").filter(l => l.trim()).map(l => l.substring(3).trim());
+      modifiedFiles = statusStdout
+        .split("\n")
+        .filter((l) => l.trim())
+        .map((l) => l.substring(3).trim());
     } catch {
       console.log("Could not read Git evidence. Is this a Git repository?");
       return;
@@ -41,7 +44,7 @@ export async function verifyCommand() {
     const observedEvidence = {
       gitDiffs,
       modifiedFiles,
-      testResults: "UNKNOWN" as const
+      testResults: "UNKNOWN" as const,
     };
 
     const allClaimedFiles = new Set<string>();
@@ -56,41 +59,42 @@ export async function verifyCommand() {
 
     const claim: AgentClaim = {
       modifiedFiles: Array.from(allClaimedFiles),
-      description: "Aggregated agent claims"
+      description: "Aggregated agent claims",
     };
 
     const evidence: Evidence = { claim, observed: observedEvidence };
 
     const scopeEngine = new ScopeEngine();
-    const consistencyEngine = new ConsistencyEngine();
+    const { getProvider } = await import("../llm/provider.js");
+    const consistencyEngine = new ConsistencyEngine(getProvider());
     const verificationEngine = new VerificationEngine(scopeEngine, consistencyEngine);
-    const memoryEngine = new MemoryEngine(cwd);
-    
+    const memoryEngine = new MemoryEngine();
+
     const memories = await memoryEngine.retrieveContext(task.intent, cwd);
 
     const plan = {
-      id: task.planId || randomUUID(),
+      id: randomUUID(),
       taskId: task.id,
       proposedSteps: [],
       affectedComponents: [],
-      status: "DRAFT" as const
+      status: "DRAFT" as const,
     };
-    
+
     const scope = {
       id: randomUUID(),
       planId: plan.id,
       allowedFiles: [],
-      allowedDirectories: [""], 
-      explicitlyForbidden: []
+      allowedDirectories: [""],
+      explicitlyForbidden: [],
     };
 
-    const result = verificationEngine.verify(plan, scope, evidence, memories);
+    const result = await verificationEngine.verify(plan, scope, evidence, memories);
 
     console.log(`\nModified files detected:`);
     if (modifiedFiles.length === 0) {
       console.log("None");
     } else {
-      modifiedFiles.forEach(f => console.log(`✓ ${f}`));
+      for (const file of modifiedFiles) console.log(`✓ ${file}`);
     }
     console.log();
 

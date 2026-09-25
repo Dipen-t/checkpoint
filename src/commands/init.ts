@@ -1,27 +1,34 @@
+import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline/promises";
-import { randomUUID } from "node:crypto";
 
 export async function initCommand() {
   const cwd = process.cwd();
-  
+
   // 1. Scaffold .checkpoint/
   const checkpointDir = path.join(cwd, ".checkpoint");
   await fs.mkdir(checkpointDir, { recursive: true });
   await fs.mkdir(path.join(checkpointDir, "memory"), { recursive: true });
   await fs.mkdir(path.join(checkpointDir, "decisions"), { recursive: true });
-  
+
   const stateFile = path.join(checkpointDir, "state.json");
   try {
     await fs.access(stateFile);
     console.log(".checkpoint/state.json already exists.");
   } catch {
-    await fs.writeFile(stateFile, JSON.stringify({
-      taskId: null,
-      planId: null,
-      status: "IDLE"
-    }, null, 2));
+    await fs.writeFile(
+      stateFile,
+      JSON.stringify(
+        {
+          taskId: null,
+          planId: null,
+          status: "IDLE",
+        },
+        null,
+        2,
+      ),
+    );
     console.log("Created .checkpoint/state.json");
   }
 
@@ -31,7 +38,7 @@ export async function initCommand() {
 
   const hooksFile = path.join(agentsDir, "hooks.json");
   let hooksConfig: any = {};
-  
+
   try {
     const raw = await fs.readFile(hooksFile, "utf-8");
     hooksConfig = JSON.parse(raw);
@@ -47,25 +54,29 @@ export async function initCommand() {
   }
 
   const integration = hooksConfig["checkpoint-integration"];
-  
+
   // Only override if not already defined so we don't clobber manual tweaks,
   // but for init, we ensure the minimal hooks are present.
-  
+
   // PreInvocation
   if (!integration.PreInvocation) integration.PreInvocation = [];
-  if (!integration.PreInvocation.some((h: any) => h.command && h.command.includes("hook pre-invocation"))) {
+  if (
+    !integration.PreInvocation.some(
+      (h: any) => h.command && h.command.includes("hook pre-invocation"),
+    )
+  ) {
     integration.PreInvocation.push({ type: "command", command: `${execCmd} pre-invocation` });
   }
 
   // PreToolUse
   if (!integration.PreToolUse) integration.PreToolUse = [];
-  const hasPreToolUse = integration.PreToolUse.some((group: any) => 
-    group.matcher && group.matcher.includes("replace_file_content")
+  const hasPreToolUse = integration.PreToolUse.some(
+    (group: any) => group.matcher && group.matcher.includes("replace_file_content"),
   );
   if (!hasPreToolUse) {
     integration.PreToolUse.push({
       matcher: "replace_file_content|multi_replace_file_content|write_to_file",
-      hooks: [{ type: "command", command: `${execCmd} pre-tool-use` }]
+      hooks: [{ type: "command", command: `${execCmd} pre-tool-use` }],
     });
   }
 
@@ -81,7 +92,7 @@ export async function initCommand() {
   // 3. Install Antigravity Skill
   const skillsDir = path.join(agentsDir, "skills", "checkpoint");
   await fs.mkdir(skillsDir, { recursive: true });
-  
+
   const skillContent = `---
 name: checkpoint
 description: >-
@@ -106,6 +117,9 @@ When the user types one of the following commands, execute the corresponding CLI
     Run \`${execCmd} decisions\`
 *   If they type \`@checkpoint explain\` or \`/checkpoint explain\`:
     Run \`${execCmd} explain\`
+*   If they type \`/login\`:
+    Run \`${execCmd} login\`
+    This keeps POST /auth/login as the sign-in path and writes every try to the login ledger. It does not store passwords.
 
 *Present the output of these commands directly to the user cleanly.*
 
@@ -124,10 +138,10 @@ If you attempt to execute a tool, and Checkpoint **denies** the tool execution w
 
   await fs.writeFile(path.join(skillsDir, "SKILL.md"), skillContent);
   console.log("Updated .agents/skills/checkpoint/SKILL.md.");
-  
+
   // 4. Interactive Prompts or Bootstrap Mode
   const memoryDir = path.join(checkpointDir, "memory");
-  
+
   const createMemory = async (type: string, content: string, confidence: string = "CONFIRMED") => {
     if (!content.trim()) return;
     const id = randomUUID();
@@ -137,7 +151,7 @@ If you attempt to execute a tool, and Checkpoint **denies** the tool execution w
       content,
       confidence,
       provenance: "checkpoint init",
-      scopedTo: ["global"]
+      scopedTo: ["global"],
     };
     await fs.writeFile(path.join(memoryDir, `${id}.json`), JSON.stringify(memory, null, 2));
   };
@@ -157,12 +171,12 @@ If you attempt to execute a tool, and Checkpoint **denies** the tool execution w
   if (isExistingProject) {
     console.log("\n--- Checkpoint Bootstrap Mode ---");
     console.log("Existing project detected. Analyzing repository baseline...");
-    
+
     // Dynamic import to avoid circular dep if any, though UnderstandingEngine is standalone
     const { UnderstandingEngine } = await import("../engines/understanding/index.js");
     const engine = new UnderstandingEngine();
     const context = await engine.scanWorkspace(cwd);
-    
+
     console.log(`\nProject Baseline Discovered:`);
     let inferredCount = 0;
 
@@ -178,22 +192,38 @@ If you attempt to execute a tool, and Checkpoint **denies** the tool execution w
     }
     if (context.frameworks.length > 0) {
       console.log(`✓ Frameworks: ${context.frameworks.join(", ")}`);
-      await createMemory("ARCHITECTURE", `Frameworks: ${context.frameworks.join(", ")}`, "INFERRED");
+      await createMemory(
+        "ARCHITECTURE",
+        `Frameworks: ${context.frameworks.join(", ")}`,
+        "INFERRED",
+      );
       inferredCount++;
     }
     if (context.architecturalPatterns.length > 0) {
       console.log(`✓ Architecture: ${context.architecturalPatterns.join(", ")}`);
-      await createMemory("ARCHITECTURE", `Architectural Patterns: ${context.architecturalPatterns.join(", ")}`, "INFERRED");
+      await createMemory(
+        "ARCHITECTURE",
+        `Architectural Patterns: ${context.architecturalPatterns.join(", ")}`,
+        "INFERRED",
+      );
       inferredCount++;
     }
     if (context.codeConsistency.length > 0) {
       console.log(`✓ Consistency: ${context.codeConsistency.join(", ")}`);
-      await createMemory("CONVENTION", `Code Consistency: ${context.codeConsistency.join(", ")}`, "INFERRED");
+      await createMemory(
+        "CONVENTION",
+        `Code Consistency: ${context.codeConsistency.join(", ")}`,
+        "INFERRED",
+      );
       inferredCount++;
     }
 
-    console.log(`\n${inferredCount} potentially important conventions identified and saved as INFERRED.`);
-    console.log("Checkpoint will NOT enforce these conventions until you explicitly confirm them during a tool block.");
+    console.log(
+      `\n${inferredCount} potentially important conventions identified and saved as INFERRED.`,
+    );
+    console.log(
+      "Checkpoint will NOT enforce these conventions until you explicitly confirm them during a tool block.",
+    );
   } else {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -202,18 +232,30 @@ If you attempt to execute a tool, and Checkpoint **denies** the tool execution w
 
     console.log("\n--- Checkpoint Initial Configuration ---");
     console.log("Let's set up some foundational rules for this project.\n");
-    
-    const domainStr = await rl.question("1. What is the purpose of this project, and what features have been built or need to be built? (e.g., An e-commerce site; currently have authentication, need to build cart): ");
-    const architectureStr = await rl.question("2. What is the primary architecture or tech stack for this project? (e.g., Express + React, Next.js, Django): ");
-    
-    const archContext = architectureStr.trim() ? `Given you're using ${architectureStr.trim()}` : "What";
-    const structureStr = await rl.question(`3. ${archContext}, what is the intended project structure? (e.g., standard MVC, monorepo, microservices): `);
-    
+
+    const domainStr = await rl.question(
+      "1. What is the purpose of this project, and what features have been built or need to be built? (e.g., An e-commerce site; currently have authentication, need to build cart): ",
+    );
+    const architectureStr = await rl.question(
+      "2. What is the primary architecture or tech stack for this project? (e.g., Express + React, Next.js, Django): ",
+    );
+
+    const archContext = architectureStr.trim()
+      ? `Given you're using ${architectureStr.trim()}`
+      : "What";
+    const structureStr = await rl.question(
+      `3. ${archContext}, what is the intended project structure? (e.g., standard MVC, monorepo, microservices): `,
+    );
+
     const structContext = structureStr.trim() ? `using a ${structureStr.trim()} structure` : "";
-    const baseContext = architectureStr.trim() ? `For this ${architectureStr.trim()} project` : "For this project";
+    const baseContext = architectureStr.trim()
+      ? `For this ${architectureStr.trim()} project`
+      : "For this project";
     const finalContext = `${baseContext} ${structContext}`.trim();
-    const productionStr = await rl.question(`4. ${finalContext}, are there any specific production rules or constraints? (e.g., always use Postgres, require Docker): `);
-    
+    const productionStr = await rl.question(
+      `4. ${finalContext}, are there any specific production rules or constraints? (e.g., always use Postgres, require Docker): `,
+    );
+
     rl.close();
 
     if (domainStr.trim()) {

@@ -93,10 +93,10 @@ export class StateManager {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "EEXIST") {
           // Lock exists, wait and retry
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
         } else if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-           // Parent dir doesn't exist, try initializing it
-           await this.init();
+          // Parent dir doesn't exist, try initializing it
+          await this.init();
         } else {
           throw error;
         }

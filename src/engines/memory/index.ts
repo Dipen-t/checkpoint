@@ -1,8 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { type Memory, MemorySchema } from "../../models/memory.js";
 import type { Decision } from "../../models/decision.js";
-import { randomUUID } from "node:crypto";
+import { type Memory, MemorySchema } from "../../models/memory.js";
 
 export interface IMemoryEngine {
   retrieveContext(intent: string, workspaceRoot: string): Promise<Memory[]>;
@@ -15,7 +15,37 @@ export class MemoryEngine implements IMemoryEngine {
   async retrieveContext(intent: string, workspaceRoot: string): Promise<Memory[]> {
     const memoryDir = path.join(workspaceRoot, ".checkpoint", "memory");
     const allMemories: Memory[] = [];
-    const stopWords = new Set(["the", "and", "this", "that", "with", "from", "your", "what", "how", "when", "where", "who", "why", "are", "for", "not", "but", "all", "any", "can", "has", "have", "had", "was", "were", "add", "update", "delete", "create"]);
+    const stopWords = new Set([
+      "the",
+      "and",
+      "this",
+      "that",
+      "with",
+      "from",
+      "your",
+      "what",
+      "how",
+      "when",
+      "where",
+      "who",
+      "why",
+      "are",
+      "for",
+      "not",
+      "but",
+      "all",
+      "any",
+      "can",
+      "has",
+      "have",
+      "had",
+      "was",
+      "were",
+      "add",
+      "update",
+      "delete",
+      "create",
+    ]);
 
     try {
       const files = await fs.readdir(memoryDir);
@@ -23,7 +53,7 @@ export class MemoryEngine implements IMemoryEngine {
         if (!file.endsWith(".json")) continue;
         const content = await fs.readFile(path.join(memoryDir, file), "utf-8");
         const parsed = MemorySchema.safeParse(JSON.parse(content));
-        
+
         if (parsed.success) {
           allMemories.push(parsed.data);
         }
@@ -35,10 +65,10 @@ export class MemoryEngine implements IMemoryEngine {
     }
 
     const { BM25 } = await import("./bm25.js");
-    
+
     // We create the corpus from all non-prioritized memory contents
     // Actually, BM25 handles all documents, we just add score bonuses later
-    const contents = allMemories.map(m => m.content);
+    const contents = allMemories.map((m) => m.content);
     const bm25 = new BM25(contents);
 
     const scoredMemories = allMemories.map((memory, index) => {
@@ -51,10 +81,10 @@ export class MemoryEngine implements IMemoryEngine {
 
     // Filter out zero-score CONVENTION memories and sort by score descending
     const relevantMemories = scoredMemories
-      .filter(m => m.score > 0)
+      .filter((m) => m.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10) // Limit to top 10 relevant memories
-      .map(m => m.memory);
+      .map((m) => m.memory);
 
     return relevantMemories;
   }
@@ -69,7 +99,7 @@ export class MemoryEngine implements IMemoryEngine {
         if (!file.endsWith(".json")) continue;
         const content = await fs.readFile(path.join(memoryDir, file), "utf-8");
         const parsed = MemorySchema.safeParse(JSON.parse(content));
-        
+
         if (parsed.success) {
           memories.push(parsed.data);
         }
@@ -83,7 +113,7 @@ export class MemoryEngine implements IMemoryEngine {
 
   async extractMemory(decisions: Decision[], workspaceRoot: string): Promise<void> {
     const memoryDir = path.join(workspaceRoot, ".checkpoint", "memory");
-    
+
     try {
       await fs.mkdir(memoryDir, { recursive: true });
     } catch {
@@ -109,7 +139,7 @@ export class MemoryEngine implements IMemoryEngine {
       await fs.writeFile(
         path.join(memoryDir, `${memory.id}.json`),
         JSON.stringify(memory, null, 2),
-        "utf-8"
+        "utf-8",
       );
     }
   }
