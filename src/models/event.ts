@@ -7,7 +7,7 @@ export const EventSchema = z.object({
   type: z.string(), // e.g. TASK_CREATED, FILE_CHANGED, DECISION_RESOLVED
   timestamp: z.string().datetime(),
   source: EventSourceSchema,
-  payload: z.record(z.any()), // flexible payload for different event types
+  payload: z.record(z.string(), z.any()),
 });
 
 export type EventSource = z.infer<typeof EventSourceSchema>;

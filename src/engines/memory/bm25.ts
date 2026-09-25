@@ -1,16 +1,131 @@
 const STOP_WORDS = new Set([
-  "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", 
-  "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", 
-  "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", 
-  "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", 
-  "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", 
-  "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", 
-  "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", 
-  "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", 
-  "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", 
-  "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", 
-  "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", 
-  "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
+  "i",
+  "me",
+  "my",
+  "myself",
+  "we",
+  "our",
+  "ours",
+  "ourselves",
+  "you",
+  "your",
+  "yours",
+  "yourself",
+  "yourselves",
+  "he",
+  "him",
+  "his",
+  "himself",
+  "she",
+  "her",
+  "hers",
+  "herself",
+  "it",
+  "its",
+  "itself",
+  "they",
+  "them",
+  "their",
+  "theirs",
+  "themselves",
+  "what",
+  "which",
+  "who",
+  "whom",
+  "this",
+  "that",
+  "these",
+  "those",
+  "am",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "having",
+  "do",
+  "does",
+  "did",
+  "doing",
+  "a",
+  "an",
+  "the",
+  "and",
+  "but",
+  "if",
+  "or",
+  "because",
+  "as",
+  "until",
+  "while",
+  "of",
+  "at",
+  "by",
+  "for",
+  "with",
+  "about",
+  "against",
+  "between",
+  "into",
+  "through",
+  "during",
+  "before",
+  "after",
+  "above",
+  "below",
+  "to",
+  "from",
+  "up",
+  "down",
+  "in",
+  "out",
+  "on",
+  "off",
+  "over",
+  "under",
+  "again",
+  "further",
+  "then",
+  "once",
+  "here",
+  "there",
+  "when",
+  "where",
+  "why",
+  "how",
+  "all",
+  "any",
+  "both",
+  "each",
+  "few",
+  "more",
+  "most",
+  "other",
+  "some",
+  "such",
+  "no",
+  "nor",
+  "not",
+  "only",
+  "own",
+  "same",
+  "so",
+  "than",
+  "too",
+  "very",
+  "s",
+  "t",
+  "can",
+  "will",
+  "just",
+  "don",
+  "should",
+  "now",
 ]);
 
 /**
@@ -20,8 +135,8 @@ const STOP_WORDS = new Set([
 export function tokenize(text: string): string[] {
   const words = text.toLowerCase().match(/[a-z0-9_]+/g) || [];
   return words
-    .filter(w => !STOP_WORDS.has(w) && w.length > 2)
-    .map(w => {
+    .filter((w) => !STOP_WORDS.has(w) && w.length > 2)
+    .map((w) => {
       // Basic stemming
       if (w.length > 5 && w.endsWith("ing")) return w.slice(0, -3);
       if (w.length > 4 && w.endsWith("ed")) return w.slice(0, -2);
@@ -33,11 +148,11 @@ export function tokenize(text: string): string[] {
 export class BM25 {
   private k1: number;
   private b: number;
-  
+
   private documentTokens: string[][] = [];
   private documentLengths: number[] = [];
   private avgdl: number = 0;
-  
+
   // Maps term to number of documents containing it
   private documentFrequency: Map<string, number> = new Map();
   private idf: Map<string, number> = new Map();
@@ -85,7 +200,7 @@ export class BM25 {
     const queryTokens = tokenize(query);
     const docTokens = this.documentTokens[docIndex];
     const dl = this.documentLengths[docIndex];
-    
+
     // Calculate term frequencies in this document
     const termFreqs = new Map<string, number>();
     for (const token of docTokens) {

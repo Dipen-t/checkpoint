@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "profile": "team",
+  "reviewers": ["security@example.com"],
+  "requireReviewer": true,
+  "witness": "ci",
+  "imports": [],
+  "approvalRequired": [
+    "checkpoint.policy.json",
+    "checkpoint.pub",
+    ".github/workflows/**",
+    ".gitlab-ci.yml"
+  ],
+  "exceptions": []
+}

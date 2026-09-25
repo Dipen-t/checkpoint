@@ -1,6 +1,6 @@
+import { exec } from "node:child_process";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
@@ -55,6 +55,14 @@ export async function doctorCommand() {
     const pkgFile = path.join(cwd, "package.json");
     const content = await fs.readFile(pkgFile, "utf-8");
     JSON.parse(content);
+  });
+
+  // 6. Ledger, when one exists
+  await runCheck("Ledger chain is intact", async () => {
+    const { Ledger } = await import("../ledger/chain.js");
+    const ledger = new Ledger(cwd);
+    const result = await ledger.verify();
+    if (!result.ok) throw new Error(`Chain broken at record ${result.brokenAt}`);
   });
 
   console.log();

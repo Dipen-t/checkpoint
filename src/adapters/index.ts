@@ -1,6 +1,6 @@
-import type { Task } from "../models/task.js";
-import type { Plan } from "../models/plan.js";
 import type { Decision } from "../models/decision.js";
+import type { Plan } from "../models/plan.js";
+import type { Task } from "../models/task.js";
 import type { AgentClaim } from "../models/verification.js";
 
 /**
@@ -44,7 +44,7 @@ export type CheckpointAction =
  */
 export interface IAgentAdapter {
   getCapabilities(): AgentCapabilities;
-  
+
   // Method to push an action from Checkpoint to the Agent
   dispatchAction(action: CheckpointAction): Promise<void>;
 }

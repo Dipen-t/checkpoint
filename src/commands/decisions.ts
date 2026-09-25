@@ -1,9 +1,9 @@
-import { StateManager } from "../core/state.js";
-import { DecisionPresenter } from "../presentation/decision-request.js";
-import { MemoryEngine } from "../engines/memory/index.js";
-import * as readline from "node:readline/promises";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
+import * as readline from "node:readline/promises";
+import { StateManager } from "../core/state.js";
+import { MemoryEngine } from "../engines/memory/index.js";
+import { DecisionPresenter } from "../presentation/decision-request.js";
 
 export async function decisionsCommand(subcommand?: string, id?: string) {
   const cwd = process.cwd();
@@ -15,10 +15,10 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
     return;
   }
 
-  const pending = task.decisions.filter(d => d.status === "PENDING" && d.requiresHumanInput);
+  const pending = task.decisions.filter((d) => d.status === "PENDING" && d.requiresHumanInput);
 
   if (!subcommand) {
-    const memoryEngine = new MemoryEngine(cwd);
+    const memoryEngine = new MemoryEngine();
     const activeDecisions = await memoryEngine.getAllDecisions(cwd);
 
     if (pending.length === 0 && activeDecisions.length === 0) {
@@ -27,18 +27,18 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
     }
 
     console.log("CHECKPOINT DECISIONS\n");
-    
+
     if (pending.length > 0) {
       console.log("PENDING DECISIONS:");
-      pending.forEach(d => {
+      pending.forEach((d) => {
         console.log(`- [${d.id}] ${d.issue}`);
       });
       console.log();
     }
-    
+
     if (activeDecisions.length > 0) {
       console.log("ACTIVE DECISIONS:");
-      activeDecisions.forEach(d => {
+      activeDecisions.forEach((d) => {
         console.log(`- Decision: ${d.resolution}`);
         console.log(`  Scope: ${d.scopedTo?.join(", ") || "Global"}`);
         console.log(`  Status: ${d.status}`);
@@ -56,7 +56,7 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
       return;
     }
 
-    const decision = pending.find(d => d.id === id);
+    const decision = pending.find((d) => d.id === id);
     if (!decision) {
       console.log(`Decision ${id} not found or already resolved.`);
       return;
@@ -76,11 +76,11 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
     if (isYes || overrideScope) {
       approved = isYes;
       rationale = "Auto-resolved";
-      scope = overrideScope ? overrideScope.split(",").map(s => s.trim()) : [];
+      scope = overrideScope ? overrideScope.split(",").map((s) => s.trim()) : [];
     } else {
       const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
       });
 
       const answer = await rl.question("\n[y/N]: ");
@@ -92,15 +92,15 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
         rationale = await rl.question("Optional rationale (what should the agent do instead?): ");
       }
 
-      const scopeStr = await rl.question("Scope (comma separated, e.g. src/commands, or leave empty for global): ");
-      scope = scopeStr.split(",").map(s => s.trim()).filter(s => s);
+      const scopeStr = await rl.question(
+        "Scope (comma separated, e.g. src/commands, or leave empty for global): ",
+      );
+      scope = scopeStr
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s);
 
       rl.close();
-    }
-
-    // Fallback to task plan if empty
-    if (scope.length === 0) {
-      scope = task.plan?.affectedComponents || [];
     }
 
     // Update state.json
@@ -119,7 +119,7 @@ export async function decisionsCommand(subcommand?: string, id?: string) {
     await fs.writeFile(
       path.join(decisionDir, `${decision.id}.json`),
       JSON.stringify(decision, null, 2),
-      "utf-8"
+      "utf-8",
     );
 
     // Extract memory immediately

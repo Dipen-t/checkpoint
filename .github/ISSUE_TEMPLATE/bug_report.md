@@ -1,26 +1,22 @@
 ---
 name: Bug report
-about: Create a report to help us improve Checkpoint
+about: A check, a profile, or a document did the wrong thing
 title: ''
 labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is. (e.g. Checkpoint blocked an allowed tool, or failed to detect an architecture violation).
+**What happened**
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Agent sent this implementation plan: '...'
-2. Checkpoint memory contains: '...'
-3. Checkpoint evaluated it as '...'
-4. See error
+**Profile**
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+`local`, `team`, or `house`.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. macOS]
- - Node Version [e.g. 20]
- - Agent IDE [e.g. Cursor, Antigravity]
+**Command and exit code**
+
+**Diff, with secrets removed**
+
+The check judges `git diff HEAD`. Paste the smallest diff that shows the bug. Do not paste a token, a password, or a private key.
+
+**What you expected**

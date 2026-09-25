@@ -63,7 +63,11 @@ export class UnderstandingEngine implements IUnderstandingEngine {
       const allDeps = [...deps, ...devDeps];
 
       // Runtime
-      if (allDeps.includes("@types/node") || (pkg.scripts && Object.values(pkg.scripts).some((s: any) => typeof s === 'string' && s.includes("node ")))) {
+      if (
+        allDeps.includes("@types/node") ||
+        (pkg.scripts &&
+          Object.values(pkg.scripts).some((s: any) => typeof s === "string" && s.includes("node ")))
+      ) {
         context.runtime = "Node.js";
       }
 
@@ -103,10 +107,12 @@ export class UnderstandingEngine implements IUnderstandingEngine {
     try {
       const rootEntries = await fs.readdir(workspaceRoot, { withFileTypes: true });
       const rootDirs = rootEntries.filter((e) => e.isDirectory()).map((e) => e.name);
-      
+
       let srcDirs: string[] = [];
       try {
-        const srcEntries = await fs.readdir(path.join(workspaceRoot, "src"), { withFileTypes: true });
+        const srcEntries = await fs.readdir(path.join(workspaceRoot, "src"), {
+          withFileTypes: true,
+        });
         srcDirs = srcEntries.filter((e) => e.isDirectory()).map((e) => e.name);
       } catch {}
 
@@ -131,7 +137,13 @@ export class UnderstandingEngine implements IUnderstandingEngine {
 
     // 5. Code Consistency Analysis
     try {
-      const sampleFiles = ["src/index.ts", "src/cli.ts", "src/app.ts", "src/main.ts", "src/index.js"];
+      const sampleFiles = [
+        "src/index.ts",
+        "src/cli.ts",
+        "src/app.ts",
+        "src/main.ts",
+        "src/index.js",
+      ];
       for (const file of sampleFiles) {
         try {
           const content = await fs.readFile(path.join(workspaceRoot, file), "utf-8");
@@ -144,9 +156,11 @@ export class UnderstandingEngine implements IUnderstandingEngine {
           // Quotes
           const singleQuotes = (content.match(/'/g) || []).length;
           const doubleQuotes = (content.match(/"/g) || []).length;
-          if (doubleQuotes > singleQuotes + 10) context.codeConsistency.push("Prefers double quotes for strings.");
-          else if (singleQuotes > doubleQuotes + 10) context.codeConsistency.push("Prefers single quotes for strings.");
-          
+          if (doubleQuotes > singleQuotes + 10)
+            context.codeConsistency.push("Prefers double quotes for strings.");
+          else if (singleQuotes > doubleQuotes + 10)
+            context.codeConsistency.push("Prefers single quotes for strings.");
+
           break; // Just need one good sample
         } catch {}
       }

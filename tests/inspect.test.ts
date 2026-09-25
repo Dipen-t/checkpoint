@@ -23,7 +23,7 @@ test("Inspects Checkpoint (Modular CLI Architecture)", async () => {
   expect(output).toContain("Testing:        vitest"); // due to devDependencies
   expect(output).toContain("Build Tooling:  tsup"); // due to devDependencies
   expect(output).toContain("Architecture:   Modular Engine/Adapter Architecture"); // due to src/engines, src/adapters, src/core
-  expect(output).toContain("checkpoint -> ./dist/index.js"); // CLI entrypoint
+  expect(output).toContain("checkpoint -> dist/cli.js");
 });
 
 test("Inspects Layered API Fixture (Layered Express Architecture)", async () => {

@@ -1,18 +1,30 @@
-import type { Plan } from "../../models/plan.js";
-import type { Memory } from "../../models/memory.js";
-import type { Decision } from "../../models/decision.js";
-import type { Conflict } from "../../models/verification.js";
-import type { FinalEvaluator } from "../../core/evaluator.js";
 import { randomUUID } from "node:crypto";
+import type { FinalEvaluator } from "../../core/evaluator.js";
+import { Ledger } from "../../ledger/chain.js";
+import type { Decision } from "../../models/decision.js";
+import type { Memory } from "../../models/memory.js";
+import type { Plan } from "../../models/plan.js";
+import type { Conflict } from "../../models/verification.js";
 
 export interface IDecisionEngine {
-  evaluatePlan(plan: Plan, memories: Memory[], priorDecisions: Decision[]): Promise<{ decisions: Decision[], evaluations: any[] }>;
+  evaluatePlan(
+    plan: Plan,
+    memories: Memory[],
+    priorDecisions: Decision[],
+  ): Promise<{ decisions: Decision[]; evaluations: any[] }>;
 }
 
 export class DecisionEngine implements IDecisionEngine {
-  constructor(private evaluator: FinalEvaluator) {}
+  constructor(
+    private evaluator: FinalEvaluator,
+    private workspaceRoot?: string,
+  ) {}
 
-  async evaluatePlan(plan: Plan, memories: Memory[], priorDecisions: Decision[]): Promise<{ decisions: Decision[], evaluations: any[] }> {
+  async evaluatePlan(
+    plan: Plan,
+    memories: Memory[],
+    priorDecisions: Decision[],
+  ): Promise<{ decisions: Decision[]; evaluations: any[] }> {
     const decisions: Decision[] = [];
     const evaluations: any[] = [];
     const conflicts = this.detectConflicts(plan, memories);
@@ -23,8 +35,22 @@ export class DecisionEngine implements IDecisionEngine {
       evaluations.push({
         conflict,
         resolution,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
+
+      if (this.workspaceRoot) {
+        const ledger = new Ledger(this.workspaceRoot);
+        await ledger.append({
+          type: "DECISION_EVALUATED",
+          source: "SYSTEM",
+          payload: {
+            subject: conflict.subject,
+            outcome: resolution.type,
+            reason: resolution.reason,
+            escalateToHuman: resolution.escalateToHuman,
+          },
+        });
+      }
 
       if (resolution.escalateToHuman) {
         decisions.push({
@@ -39,7 +65,7 @@ export class DecisionEngine implements IDecisionEngine {
             existingRule: conflict.rule?.content,
             risk: resolution.risk || "MEDIUM",
             warningDetails: resolution.warningDetails,
-          }
+          },
         });
       }
     }
@@ -52,11 +78,12 @@ export class DecisionEngine implements IDecisionEngine {
 
     for (const step of plan.proposedSteps) {
       const lowerStep = step.toLowerCase();
-      
+
       // Heuristic 1: Security changes (word-boundary matching to reduce false positives)
       // \bauth matches "auth", "authentication", "authorize" but NOT "0auth"
       // Other keywords use full \b...\b boundaries
-      const securityPattern = /\bauth|\bcredential\b|\bsecret\b|\blogin\b|\bencryption\b|\btoken\b|\bjwt\b|\bpassword\b/i;
+      const securityPattern =
+        /\bauth|\bcredential\b|\bsecret\b|\blogin\b|\bencryption\b|\btoken\b|\bjwt\b|\bpassword\b/i;
       if (securityPattern.test(lowerStep)) {
         conflicts.push({
           id: randomUUID(),
@@ -71,7 +98,15 @@ export class DecisionEngine implements IDecisionEngine {
       }
 
       // Heuristic 2: Data Model changes
-      if (lowerStep.includes("schema") || lowerStep.includes("migration") || lowerStep.includes("persistence") || lowerStep.includes("database") || lowerStep.includes("sqlite") || lowerStep.includes("postgres") || lowerStep.includes("prisma")) {
+      if (
+        lowerStep.includes("schema") ||
+        lowerStep.includes("migration") ||
+        lowerStep.includes("persistence") ||
+        lowerStep.includes("database") ||
+        lowerStep.includes("sqlite") ||
+        lowerStep.includes("postgres") ||
+        lowerStep.includes("prisma")
+      ) {
         conflicts.push({
           id: randomUUID(),
           source: "PLAN",
@@ -85,8 +120,12 @@ export class DecisionEngine implements IDecisionEngine {
       }
 
       // Heuristic 3: Dependencies
-      if (lowerStep.includes("add dependency") || lowerStep.includes("npm install") || lowerStep.includes("package.json")) {
-         conflicts.push({
+      if (
+        lowerStep.includes("add dependency") ||
+        lowerStep.includes("npm install") ||
+        lowerStep.includes("package.json")
+      ) {
+        conflicts.push({
           id: randomUUID(),
           source: "PLAN",
           subject: step,
@@ -103,9 +142,11 @@ export class DecisionEngine implements IDecisionEngine {
           // If memory bans something or defines a boundary, and step mentions it
           // A real semantic engine would use cosine similarity. Here we do deterministic heuristics.
           if (
-            (memory.content.toLowerCase().includes("repository") && lowerStep.includes("repository")) ||
+            (memory.content.toLowerCase().includes("repository") &&
+              lowerStep.includes("repository")) ||
             (memory.content.toLowerCase().includes("cli") && lowerStep.includes("cli")) ||
-            (memory.content.toLowerCase().includes("business logic") && (lowerStep.includes("logic") || lowerStep.includes("core")))
+            (memory.content.toLowerCase().includes("business logic") &&
+              (lowerStep.includes("logic") || lowerStep.includes("core")))
           ) {
             conflicts.push({
               id: randomUUID(),
@@ -119,7 +160,7 @@ export class DecisionEngine implements IDecisionEngine {
             });
           }
         }
-        
+
         // Match conventions
         if (memory.type === "CONVENTION" && lowerStep.includes("npm")) {
           conflicts.push({

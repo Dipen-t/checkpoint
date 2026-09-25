@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { MemorySchema } from "./memory.js";
 
-export const DeviationTypeSchema = z.enum(["SCOPE", "ARCHITECTURE", "SECURITY", "EVIDENCE_MISMATCH"]);
+export const DeviationTypeSchema = z.enum([
+  "SCOPE",
+  "ARCHITECTURE",
+  "SECURITY",
+  "EVIDENCE_MISMATCH",
+]);
 
 export const DeviationSchema = z.object({
   type: DeviationTypeSchema,
@@ -56,7 +61,7 @@ export const ResolutionTypeSchema = z.enum([
   "HUMAN_DECISION_REQUIRED",
   "ACCEPTED_EXCEPTION",
   "OVERRIDE_EXISTING_MEMORY",
-  "FOLLOW_EXISTING_DECISION"
+  "FOLLOW_EXISTING_DECISION",
 ]);
 
 export const WarningDetailsSchema = z.object({
