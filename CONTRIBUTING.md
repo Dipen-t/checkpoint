@@ -7,7 +7,7 @@ Issues and pull requests are welcome. The useful change is a smaller rule, a cle
 ## Set up
 
 ```bash
-git clone https://github.com/Dipen-t/checkpoint.git
+git clone https://github.com/mohit131415/checkpoint.git
 cd checkpoint
 npm install
 npm test
